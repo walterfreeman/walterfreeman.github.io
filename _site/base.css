@@ -1,0 +1,13 @@
+body {
+  font: 400 16px/1.5 "Domine", sans-serif;
+  color: #000000;
+  background-color: #FFEEDD;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-feature-settings: "kern" 1;
+  -moz-font-feature-settings: "kern" 1;
+  -o-font-feature-settings: "kern" 1;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+  min-width: 1250px;
+  width: auto !important;
+  width: 1250px; }

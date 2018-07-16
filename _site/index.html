@@ -1,6 +1,36 @@
-Whoops! You forgot to type in the full URL.
+<html>
+<head>
+ <link rel="stylesheet" href="base.css">
+</head>
+<body>
+<center>
 
-If you're looking for Walter's class websites, you probably want either
+  <a href="anim.tar">Download link for anim and sample code</a><br><br>
+  <a href="anim-manual.pdf">Manual for anim (PDF format)</a>
 
-<a href="https://walterfreeman.github.io/ast101"><img src="sky.png"></a>
-<a href="https://walterfreeman.github.io/phys101"><img src="drum.png></a>
+  <br><br>
+</center>
+  To use this, download to any directory on your computer. Unpack by changing to that
+  directory and running<br><br><tt>tar xvf anim.tar</tt> <br><br>
+
+  The manual including installation instructions is included in the tarball. <br><br>
+  
+  In short, 
+  you may install on a Mac by running <tt>make anim-mac</tt> and <tt>make demos</tt>. 
+  Because OSX has formally deprecated OpenGL 2, you will get compiler warnings, but 
+  these shouldn't cause a problem. Copy the resulting
+  <tt>anim</tt> binary to somewhere on your system path; you can do this automatically with
+  <tt>sudo make install</tt>.<br><br>
+  
+  You may install on Linux by installing the <tt>freeglut3-dev</tt> and <tt>libglew-dev</tt>
+  packages, then running <tt>make anim</tt> and <tt>make demos</tt>. Copy the resulting
+  <tt>anim</tt> binary to somewhere on your system path; you can do this automatically with
+  <tt>sudo make install</tt>.<br><br>
+
+  Contact me at <a href="mailto:wafreema@syr.edu">wafreema@syr.edu</a> with questions or
+  comments!
+
+</body>
+</html>
+
+
