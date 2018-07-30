@@ -3,34 +3,56 @@
  <link rel="stylesheet" href="base.css">
 </head>
 <body>
-<center>
 
-  <a href="anim.tar">Download link for anim and sample code</a><br><br>
-  <a href="anim-manual.pdf">Manual for anim (PDF format)</a>
+  <h2>Things to do, part 1:</h2>
 
-  <br><br>
-</center>
-  To use this, download to any directory on your computer. Unpack by changing to that
-  directory and running<br><br><tt>tar xvf anim.tar</tt> <br><br>
+  <ol>
+    <li> Think about what values for g and L you want to use, and fill them in </li>
+    <li> Think about a sensible value for the timestep dt, and add it. (Remember computers
+    are fast!)</li>
+    <li> Set some initial conditions for your pendulum (and the stopwatch you are using
+    to time it)</li>
+    <li> Fill in the physics update: how do theta, omega, and t change during each timestep?</li>
+    <li> Play with your parameters and see how the behavior changes? What happens for an 
+      amplitude of 3 radians? Is this physical?</li>
+      
+  </ol>
 
-  The manual including installation instructions is included in the tarball. <br><br>
-  
-  In short, 
-  you may install on a Mac by running <tt>make anim-mac</tt> and <tt>make demos</tt>. 
-  Because OSX has formally deprecated OpenGL 2, you will get compiler warnings, but 
-  these shouldn't cause a problem. Copy the resulting
-  <tt>anim</tt> binary to somewhere on your system path; you can do this automatically with
-  <tt>sudo make install</tt>.<br><br>
-  
-  You may install on Linux by installing the <tt>freeglut3-dev</tt> and <tt>libglew-dev</tt>
-  packages, then running <tt>make anim</tt> and <tt>make demos</tt>. Copy the resulting
-  <tt>anim</tt> binary to somewhere on your system path; you can do this automatically with
-  <tt>sudo make install</tt>.<br><br>
+<iframe src="https://trinket.io/embed/glowscript/afb30d4fc5" width="100%" height="600" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen></iframe>
 
-  Contact me at <a href="mailto:wafreema@syr.edu">wafreema@syr.edu</a> with questions or
-  comments!
+<h2>Things to do, part 2:</h2>
+
+  <ol>
+    <li> Modify the condition on the while loop: how can you make the pendulum stop
+    after one-half swing?</li>
+    <li> The code will now print out the period and end. How does the period depend on the
+    amplitude?</li>
+  </ol>
+
+<h2>Things to do, part 3a (if you have plenty of time and want to hack yourself):</h2>
+
+  <ol>
+    <li> Fill in the missing pieces of the below code to run many simulations, one after the
+      other, and compute the "period anomaly" for each</li>
+    <li> Investigate the resulting plot of period anomaly vs. amplitude. How does this relate to broader physics ideas?</li>
+  </ol>
+
+  <iframe src="https://trinket.io/embed/glowscript/6e12850f82" width="100%" height="600" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen></iframe>
+
+<h2>Things to do, part 3b (if you are short on time and want to skip to the analysis):</h2>
+
+  <ol>
+    <li>Run the below code. What is it doing?</li>
+    <li>The "period anomaly" is the difference between the simulated period and the one 
+      predicted by the small-angle approximation formula in the textbooks. The code will 
+      plot it in real time. Explain the following features:</li>
+    <ol>
+      <li>Why does the plot look "stair-stepped" at very low amplitude?</li>
+	<li>Why is the anomaly quadratic in the angle for intermediate amplitude?</li>
+	<li>Why does the anomaly increase faster than angle squared for very large angle?</li>
+    </ol>
+  </ol>
+<iframe src="https://trinket.io/embed/glowscript/a00ebb6c42" width="100%" height="600" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen></iframe>
 
 </body>
 </html>
-
-
