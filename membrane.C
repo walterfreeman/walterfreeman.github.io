@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <unistd.h>
+
 int nr,nth;
 int N=80;
 float get_bessel_zero(int m, int n)
@@ -21,6 +23,7 @@ float init_bessel(float x, float y,int m, int n){  float r=hypot(x,y);
 }
 int main(int argc, char **argv)
 {
+  printf("c3 0 0 0 0\nF\n");
   char mode;
   if (argc < 4) 
   {
@@ -99,12 +102,13 @@ int main(int argc, char **argv)
 	  printf("C %.2e %.2e %.2e\n",0.5+z[(i)*(N+1)+j]*5,0.5,0.5-z[(i)*(N+1)+j]*5);
 	  if ((x*x+y*y)<1+dx*1.5 && (x+dx)*(x+dx)+(y*y) < 1+dx*1.5 && i<N) 
 	    if ((x*x+y*y)<1+dx*1.5 && (y+dx)*(y+dx)+(x*x) < 1+dx*1.5 && i<N) 
-	  	printf("q3 %.3e %.3e %.3e %.3e %.3e %.3e %.3e %.3e %.3e %.3e %.3e %.3e\n",x,y,      z[(i)*(N+1)+j]
+	  	printf("q3 %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e %.8e\n",x,y,      z[(i)*(N+1)+j]
 	                                                  ,x,y+dx,   z[(i)*(N+1)+j+1]
 	                                                   ,x+dx,y+dx,z[(i+1)*(N+1)+j+1]
 	                                                   ,x+dx,y,   z[(i+1)*(N+1)+j]);
 	}
       printf("C 1 1 1\n");
+//      usleep(500000);
       printf("F\n");
     } 
   }

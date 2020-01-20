@@ -18,7 +18,6 @@ gcc anim.c -framework GLUT -framework OpenGL -framework Cocoa
 #include <stdlib.h>
 #include <math.h>
 #include "vector.h"
-#include "makepng.h"
 #include <unistd.h>
 #include <string.h>
 
@@ -27,9 +26,6 @@ gcc anim.c -framework GLUT -framework OpenGL -framework Cocoa
 #define NB 500
 #define BL 10000
 
-vector trail[BL][NB];
-int spherecounter=0;
-int sunlight=0;
 int traillen[NB]={BL};
 int rbl[NB]={0};
 int rbocc[NB]={0};
@@ -71,38 +67,6 @@ double blue=1;
 
 void save_config(void);
 void load_config(void);
-void screenshot(void);
-
-void screenshot(char *fn)
-{
-  if (!fopen(fn,"w")) 
-  {
-    fprintf(stderr, "Can't write to filename %s, using a default instead\n",fn);
-    screenshot();
-    return;
-  }
-  char *pixels = (char *)malloc(sizeof(GL_UNSIGNED_BYTE)*window_size_y * window_size_x);
-  glReadBuffer(GL_FRONT);
-  glReadPixels(0, 0, window_size_x, window_size_y, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-
-  makepng(fn,window_size_x, window_size_y, pixels);
-}
-
-
-void screenshot(void)
-{
-  
-  char fn[200];
-  int nameokay=0;
-  int num=0;
-  while (nameokay == 0)
-  {
-    if (num > 0) snprintf(fn, 200, "anim-%05d.png",num); else snprintf(fn, 200, "anim.png");
-    if (access( fn, F_OK ) == -1 ) nameokay = 1;
-    num++;  
-  }
-  screenshot(fn);
-}
 
 
 bool gluInvertMatrix(const float m[16], float invOut[16])
@@ -314,18 +278,10 @@ void vvert(vector v)
   glVertex3f(v.x, v.y, v.z);
 }
 
-
-void clamp(float &v)
-{
-  if (v > 1) v=1;
-  if (v < 0) v=0;
-}
-
 void myColor4f(float r, float g, float b, float a)
 {
-//  a=pow(a,1/contrast);
+  a=pow(a,1/contrast);
   float col[]={r,g,b,a};
-  clamp(r); clamp(g); clamp(b); clamp(a);
   float invcol[]={1.0f-(g+b)*0.5f,1.0f-(b+r)*0.5f,1.0f-(g+r)*0.5f,a};
   float spec[]={sqrt(r)/2,sqrt(g)/2,sqrt(b)/2,a};
   if (inverse == 0)
@@ -436,8 +392,10 @@ double orderofmagnitude(double v)
 }
 void lin (double x1,double y1,double x2,double y2)
 {
+
   glVertex3f(x1,y1,0);
   glVertex3f(x2,y2,0);
+
 }
 
 void lin3(vector p1, vector p2)
@@ -445,7 +403,10 @@ void lin3(vector p1, vector p2)
   static vector t1, t2;
   t1=transform(p1);
   t2=transform(p2);
+//  if (p2.z<-vdist || p1.z<-vdist) return;
+//  if (ctog)  myColor4f(0.5,0.5,0.5,exp(-(t1.z*4+vdist)/vdist)+.15);
   vvert(t1);  
+//  if (ctog)  myColor4f(0.5,0.5,0.5,exp(-(t2.z*4+vdist)/vdist)+.15);
   vvert(t2);
 }
 
@@ -768,43 +729,12 @@ void disp(void)
 {
 }
 
-void sphere(vector cent, float r)
-{
-    static GLfloat white[]={1.f, 1.f, 1.f, 1.f};
-    spherecounter++;
-    float curcolor[4]={(float)red,(float)green,(float)blue,1.0};
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,white);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,curcolor);
-    float shine=30.0;
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &shine);
-    glMatrixMode(GL_MODELVIEW);
-    glTranslatef    (cent.x, cent.y, cent.z);
-    glutSolidSphere(r, circfaces, circfaces); 
-    glTranslatef    (-cent.x, -cent.y, -cent.z);
-}
-
-void draw_trail(int b)
-{
-    glNormal3f(0,0,1);
-    glBegin(GL_LINE_STRIP);
-    for (int i=0; i<rbocc[b]; i++)
-    {
-      if (i > 2*traillen[b]) break;
-      double bright=exp(-(float)i/traillen[b]);
-      myColor4f(red,green,blue,bright);
-      int j=(rbl[b]-i+BL)%BL;
-      vvert(trail[j][b]);
-    }
-    glEnd();
-    rbl[b]=(rbl[b]+1)%BL;
-    
-}
-
 void idle(void)
 {
 //  printf(" -- START OF IDLE t=%d--\n",glutGet(GLUT_ELAPSED_TIME));
+  static int spherecounter=0;
   static int n,i, num_lines=9;
-  static int warmup=1;
+  static int warmup=2;
   static int decimals;
   static double angle;
   static double r;
@@ -817,11 +747,11 @@ void idle(void)
   static double waittime=10;
   static double spacing;
   static double x1,y1,x2,y2;
+  static vector trail[BL][NB];
 //  printf("Allocated %d buffers of length %d\n",NB,BL);
   static char c;
   static char num[200];
   static char line2[300];
-  static char gifname[300]="anim.gif";
   static int frameskip=1;
   static char line[300];
   static int lastframe=0;
@@ -830,10 +760,8 @@ void idle(void)
   static double sep,sep2;
   static double boxsize;
   static short int dummy;
-  static int gifframe=0;
   static vector v1, v2, v1t, v2t, v3, v4, v3t, v4t;
-
-  if (warmup) // flush one frame at start; this could be done better...
+  if (warmup)
   {
     warmup--;
     line[0]='F';
@@ -841,22 +769,27 @@ void idle(void)
   else 
   {
     if (fgets(line,299,stdin) == NULL) {} // to make the compiler happy; we don't really care
-    if (feof(stdin)) {usleep(1000);return;}
+    if (feof(stdin)) {usleep(10000);return;}
   }
+  // transform guess coordinates to screen coordinates
        
+   // draw framelines, 2D
  if (!strncmp(line,"c3 ",3)) { // 3d circle
     td=1;
+    spherecounter++;
+//    myColor4f(red,green,blue,1);
+    static GLfloat white[]={1.f, 1.f, 1.f, 1.f};
+ 
     vector cent;	
     sscanf(&line[3],"%lf %lf %lf %lf",&cent.x,&cent.y,&cent.z,&r);
-    sphere(cent,r);
-  }
- else if (!strncmp(line,"ulc3 ",5)) { // 3d circle
-    td=1;
-    vector cent;	
-    sscanf(&line[5],"%lf %lf %lf %lf",&cent.x,&cent.y,&cent.z,&r);
-    glDisable(GL_LIGHTING);
-    sphere(cent,r);
-    glEnable(GL_LIGHTING);
+    float curcolor[4]={(float)red,(float)green,(float)blue,1};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,curcolor);
+    float shine=30.0;
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &shine);
+    glTranslatef    (cent.x, cent.y, cent.z);
+    glutSolidSphere(r, circfaces, circfaces); 
+    glTranslatef    (-cent.x, -cent.y, -cent.z);
   }
   else if (line[0] == 'C') { //just set color
     sscanf(line,"%c %lf %lf %lf",&c,&red,&green,&blue);
@@ -892,7 +825,7 @@ void idle(void)
     glBegin(GL_LINES);
     lin(v1.x,v1.y,v2.x,v2.y);
     glEnd();
-  }
+    }
 
   else if (!strncmp(line,"erase ",6))
   {
@@ -901,8 +834,7 @@ void idle(void)
     rbocc[b]=0;
     rbl[b]=0; 
   }
-
-  else if (!strncmp(line,"ct3 ",4))
+  else if (!strncmp(line,"ct3 ",3))
   {
     spherecounter++;
     td=1;
@@ -911,45 +843,55 @@ void idle(void)
     sscanf(&line[4],"%d %lf %lf %lf %lf",&b,&v1.x,&v1.y,&v1.z,&r);
     if (b < NB) 
     {
-      trail[rbl[b]][b] = v1;
-      if (rbocc[b]<BL) rbocc[b]++;
-      draw_trail(b);
-    }
-    sphere(v1,r);
-  }
-  else if (!strncmp(line,"ct ",3))
-  {
-    spherecounter++;
-
-    int b;
-    sscanf(&line[3],"%d %lf %lf %lf",&b,&v1.x,&v1.y,&r);
-    v1.z = 0;
-    if (b < NB) 
+    trail[rbl[b]][b] = v1;
+    if (rbocc[b]<BL) rbocc[b]++;
+    
+    glNormal3f(0,0,1);
+    
+    glBegin(GL_LINE_STRIP);
+    for (int i=0; i<rbocc[b]; i++)
     {
-      trail[rbl[b]][b] = v1;
-      if (rbocc[b]<BL) rbocc[b]++;
-      draw_trail(b);
+      if (i > 2*traillen[b]) break;
+      double bright=exp(-(float)i/traillen[b]);
+      myColor4f(red,green,blue,bright);
+      int j=(rbl[b]-i+BL)%BL;
+      vvert(trail[j][b]);
     }
-    sphere(v1,r);
-  }
-else if (line[0] == 'l' && line[1] == '3' && line[2] == ' ') 
-  { // 3d line
+    glEnd();
+    rbl[b]=(rbl[b]+1)%BL;
+    }
+    GLfloat white[]={1.f, 1.f, 1.f, 1.f};
+ 
+    vector cent;
+//    cent.x=cent.y=cent.z=0; r=0.01;
+    int faces = r/scale*window_size*0.01;
+    if (faces < 8) faces=8;
+    if (faces > 15) faces=15;
+//    printf("Sphere has %d faces\n",faces);
+//    int faces=4;
+//    myColor4f(1,1,1,1);
+    float curcolor[4]={(float)red,(float)green,(float)blue,1};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,curcolor);
+    float shine=30.0;
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &shine);
+//    recurse_sphere(cent,r,3);
+//    rotate(cent,invmodmat); 
+    glTranslatef    (v1.x, v1.y, v1.z);
+    glutSolidSphere(r, circfaces, circfaces);
+    glTranslatef    (-v1.x, -v1.y, -v1.z);
+    }
+  else if (line[0] == 'l' && line[1] == '3' && line[2] == ' ') { // 3d line
     td=1;
     sscanf(&line[3],"%lf %lf %lf %lf %lf %lf",&v1.x,&v1.y,&v1.z,&v2.x,&v2.y,&v2.z);
-      if (!sunlight) glNormal3f(0,0,1);
-        else glNormal3f(-v1.x, -v1.y, -v1.z);
+      glNormal3f(0,0,1);
       glBegin(GL_LINES);
+//      if (ctog)            myColor4f(red,green,blue,exp(-(v1.z*20+vdist)/vdist)+.15);
       vvert(v1);
+//      if (ctog)      myColor4f(red,green,blue,exp(-(v2.z*20+vdist)/vdist)+.15);
       vvert(v2);
       glEnd();
-  }
- else if (!strncmp(line, "q3 ",3)) {
-    td=1;
-    // we need four vectors here
-    sscanf(&line[3],"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",&v1.x,&v1.y,&v1.z,&v2.x,&v2.y,&v2.z
-    
-                                                                 ,&v3.x,&v3.y,&v3.z,&v4.x,&v4.y,&v4.z);
-    quad(v1,v2,v3,v4,1);
+//      myColor4f(red,green,blue,1);
   }
 
   else if (!strncmp(line,"trl ",4))
@@ -990,52 +932,33 @@ else if (line[0] == 'l' && line[1] == '3' && line[2] == ' ')
     if (fgets(line2,300,stdin) == NULL) {}
     renderBitmapString(x/scale,y/scale,0,GLUT_BITMAP_TIMES_ROMAN_24,line2);
   }
-  else if (!strncmp(line, "screenshot",10))
-  {
-    // decide if user has entered a filename or not
-    if (line[11] != 32 && line[11] != 13 && line[11] != 0)
-    {
-      // there's a filename; see if it ends in .png or not 
-      if (!strncmp(line+strlen(line)-5, ".png",4)) 
-      {
-        line[strlen(line)-1]='\0';
-        screenshot(line+11);
-      }
-      else
-      {
-        line[strlen(line)-1]='\0';
-        char line2[200];
-        snprintf(line2,200,"%s.png",line);
-        screenshot(line2+11);
-      }
-    }
-    else
-    {
-      screenshot();
-    }
-  }
- 
   else if (line[0] == 'A') { // toggle gridlines
     sscanf(&line[1],"%d",&axes);
   }
 
   else if (!strncmp(line, "S ",2)) {
-    double desired_scale;
-    sscanf(&line[1],"%lf", &desired_scale); 
-    vdist2 *= desired_scale/scale2;
-    scale2=desired_scale; 
+    sscanf(&line[1],"%lf", &scale);  
   }
-  else if (!strncmp(line, "VD ",3)) {
-    sscanf(&line[2],"%lf", &vdist2); 
+  else if (!strncmp(line, "S3 ",3)) {
+    sscanf(&line[2],"%lf", &vdist); 
   }
 
-   else if (!strncmp(line, "tr ",3)) { // triangle
+  else if (!strncmp(line, "q3 ",3)) {
+    td=1;
+    // we need four vectors here
+    sscanf(&line[3],"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",&v1.x,&v1.y,&v1.z,&v2.x,&v2.y,&v2.z
+    
+                                                                 ,&v3.x,&v3.y,&v3.z,&v4.x,&v4.y,&v4.z);
+    quad(v1,v2,v3,v4,1);
+  }
+  else if (!strncmp(line, "tr ",3)) { // triangle
     td=1;
     sscanf(&line[3],"%lf %lf %lf %lf %lf %lf %lf %lf %lf",&v1.x,&v1.y,&v1.z,&v2.x,&v2.y,&v2.z
     
                                                                  ,&v3.x,&v3.y,&v3.z);
     triangle(v1,v2,v3,1);
   }
+  
   else if (!strncmp(line,"c ",2)) { // circle
     sscanf(line,"%c %lf %lf %lf",&c,&x1,&y1,&r);
     if (1)
@@ -1053,62 +976,14 @@ else if (line[0] == 'l' && line[1] == '3' && line[2] == ' ')
     glEnd();
     }
   }
-  else if (!strncmp(line,"endgif",6))
-  {
-    if (line[7] != 32 && line[9] != 13 && line[7] != 0)
-    {
-      // there's a filename; see if it ends in .gif or not 
-      if (!strncmp(line+strlen(line)-5, ".gif",4))
-      {
-        line[strlen(line)-1]='\0';
-        snprintf(gifname,200,"%s",line+7);
-      }
-      else
-      {
-        line[strlen(line)-1]='\0';
-        snprintf(gifname,200,"%s.gif",line+7);
-      }
-    }
-    else
-    {
-      snprintf(gifname,200,"animout.gif");
-    }
-    printf("Making animated gif with name %s\n",gifname);
-  
-    char command[256];
-    snprintf(command,255,"convert gifframe*.png %s",gifname);
-    fprintf(stderr,"Running command %s to create gif -- please be patient...\n",command);
-    int errcode=system(command);
-    if (errcode == 0) fprintf(stderr,"Done making animated gif\n");
-      else fprintf(stderr,"Error making animated gif -- do you have imagemagick installed?\n");
-    errcode=system("rm gifframe*.png");
-    fprintf(stderr,"Trying to optimize image...\n");
-    snprintf(command,255,"gifsicle -i %s --colors 64 --dither --optimize=3 -o tempnameanim.gif",gifname);
-    errcode=system(command);
-    if (errcode == 0) 
-    {
-//      snprintf(command,255,"mv tempnameanim.gif %s",gifname);
-//      errcode=system(command);
-      fprintf(stderr,"... image optimized\n");
-    }
-    else 
-      fprintf(stderr,"Error optimizing animated gif -- do you have gifsicle installed?\n");
-    gifframe=0;
-  }
+
   else if (line[0] == 'Q') {
     fflush(stdout); exit(0);
   }
-   else if (line[0] == 'F') {
-     if (line[1] == 'G') // we should add this frame to the animated gif we're going to make
-     {
-       char framename[50];
-       snprintf(framename, 49, "gifframe%06d.png",gifframe);
-       screenshot(framename);
-       gifframe++;
-     }
-
+  
+  else if (line[0] == 'F') {
    spherecounter++;
-   circfaces = 10 * pow(2,log10(10000/spherecounter));
+   circfaces = 5 * pow(2,log10(10000/spherecounter));
    if (circfaces < 4) circfaces = 4;
  //  if (circfaces > 24) circfaces = 24;
    spherecounter = 0; 
@@ -1140,7 +1015,7 @@ else if (line[0] == 'l' && line[1] == '3' && line[2] == ' ')
     // set up matrix
 
    if (td)
-   { 
+   {  
      glMatrixMode(GL_PROJECTION); 
      glLoadIdentity(); 
      gluPerspective(2*atan(scale/vdist)*180/M_PI, 1.0, scale/10, scale*100); 
@@ -1167,15 +1042,6 @@ else if (line[0] == 'l' && line[1] == '3' && line[2] == ' ')
    float lightcolambient1[] = {0.0, 0.0, 0.0, 1};
    float lightcoldiffuse1[] = {0.5, 0.4, 0.3, 1.}; 
    float lightcolspecular1[] = {0., 0., 0., 0.0}; 
-
-   if (sunlight)
-	  {
-		  lightpos0[0] = lightpos1[0] = 0.;
-		  lightpos0[1] = lightpos1[1] = 0.;
-		  lightpos0[2] = lightpos1[2] = 0.;
-		  lightpos0[3] = lightpos1[3] = 1.;
-	  }
-
    glLightfv(GL_LIGHT0, GL_POSITION, lightpos0);
    glLightfv(GL_LIGHT0, GL_SPECULAR, lightcolspecular0);
    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightcoldiffuse0);
@@ -1263,7 +1129,6 @@ void keyb(unsigned char key, int x, int y)
 
   if (key == 'Q') {save_config(); glutLeaveMainLoop();}
   if (key == 'A') {axes=1-axes; adef=0; update=1;}
-  if (key == 'S') {sunlight = 1-sunlight;}
   if (key == 'F') {fpsdisplay = 1-fpsdisplay; update=1;}
   if (key == 'n') {circfaces++; if (circfaces>15) circfaces=15; update=1; fprintf(stderr,"circfaces -> %d\n",circfaces);}
   if (key == 'm') {circfaces--; if (circfaces<4) circfaces=4; update=1;fprintf(stderr,"circfaces -> %d\n",circfaces);}
@@ -1293,7 +1158,6 @@ void keyb(unsigned char key, int x, int y)
   if (key == 'C') {ctog = 1-ctog;update=1;}
   if (key == 'H') {help = 1-help;update=1;}
   if (key == 'h') {help = 1-help;update=1;}
-  if (key == 'P') {screenshot();}
 }
 
 void save_config(void)

@@ -10,6 +10,9 @@ thetas=2*np.logspace(0,-2,N)
 omegas=np.zeros(N)
 periods=np.zeros(N)
 
+for i in range(N):
+    print ("trl",i,20)
+
 while 1:
    # Aspel-Euler-Cromer update
    t=t+dt
@@ -23,5 +26,5 @@ while 1:
        y=-L*np.cos(thetas[i])
        z=-i*0.2
        print ("l3",0,0,z,x,y,z)
-       print ("c3",x,y,z,0.04)
+       print ("ct3",i,x,y,z,0.04)
    print ("F\n")
