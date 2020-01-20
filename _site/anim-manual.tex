@@ -1,0 +1,231 @@
+\documentclass[12pt]{article}
+\usepackage{epsf}
+\usepackage{fullpage}
+\setlength\parindent{0pt}
+\setlength{\parskip}{4mm}
+\voffset= -0.5in
+\hoffset= -0.5in
+\topmargin=0.2in
+\textheight=9.5in
+\textwidth=6.5in
+
+\def\LL{\left\langle}	% left angle bracket
+\def\RR{\right\rangle}	% right angle bracket
+\def\LP{\left(}		% left parenthesis
+\def\RP{\right)}	% right parenthesis
+\def\LB{\left\{}	% left curly bracket
+\def\RB{\right\}}	% right curly bracket
+\def\PAR#1#2{ {{\partial #1}\over{\partial #2}} }
+\def\PARTWO#1#2{ {{\partial^2 #1}\over{\partial #2}^2} }
+\def\PARTWOMIX#1#2#3{ {{\partial^2 #1}\over{\partial #2 \partial #3}} }
+\newcommand{\BE}{\begin{displaymath}}
+\newcommand{\EE}{\end{displaymath}}
+\newcommand{\BNE}{\begin{equation}}
+\newcommand{\ENE}{\end{equation}}
+\newcommand{\BEA}{\begin{eqnarray}}
+\newcommand{\EEA}{\nonumber\end{eqnarray}}
+\newcommand{\EL}{\nonumber\\}
+\newcommand{\la}[1]{\label{#1}}
+\newcommand{\ie}{{\em i.e.\ }}
+\newcommand{\eg}{{\em e.\,g.\ }}
+\newcommand{\cf}{cf.\ }
+\newcommand{\etc}{etc.\ }
+\newcommand{\Tr}{{\rm tr}}
+
+\newcommand{\OL}[1]{\overline{#1}\ } % overline
+\newcommand{\OLL}[1]{\overline{\overline{#1}}\ } % double overline
+\newcommand{\OON}{\frac{1}{N}} % "one over N"
+\newcommand{\OOX}[1]{\frac{1}{#1}} % "one over X"
+
+\begin{document}
+\centerline{\bf \Huge {\tt anim}, an easy-to-use animation routine}
+\bigskip
+
+\section{Introduction}
+
+{\tt Anim} is a utility for drawing 2D or 3D graphics
+that is language-agnostic and easy for students to learn and use.
+
+The normal usage is to write a program in any language (Python, C, Fortran,
+COBOL, whatever...) that prints graphics commands to its standard output using the
+language's built-in print feature, then pipe this output to {\tt anim} with
+
+{\tt ./myprogram | anim}
+
+or
+
+{\tt python myprogram.py | anim}
+
+This provides a language-agnostic graphics capability that requires no additional 
+computer science knowledge, beyond printing text, from students. It runs in Linux
+or Mac OS.
+
+The program can operate in either 2D or 3D mode, and will automatically choose 3D mode if any 3D drawing commands are received.
+
+
+\section{Installation}
+
+\subsection{Linux}
+
+You will first need to install a few packages to get OpenGL support and support for screenshots.. On an Ubuntu system, do
+\begin{itemize}
+  \item {\tt sudo apt install freeglut3-dev libglew-dev libpng-dev imagemagick libpng-dev}
+\end{itemize}
+
+Then you can do:
+
+\begin{itemize}
+  \item {\tt make anim}
+  \item {\tt make demos}
+  \item {\tt sudo make install} (which copies anim into {\tt /usr/local/bin}; alternatively, copy anim into your system path somewhere else)
+\end{itemize}
+
+
+\subsection{Mac OS}
+
+Type the following:
+
+\begin{itemize}
+  \item {\tt make anim-mac}
+  \item {\tt make examples}
+  \item {\tt sudo make install} (which copies anim into {\tt /usr/local/bin}; alternatively, copy anim into your system path somewhere else)
+\end{itemize}
+
+(You will get some warnings about OpenGL 2 system calls being deprecated, but the program will still work.)
+
+\section{Usage}
+
+{\tt Anim} is a frame-based drawing utility. Rather than displaying graphics as it receives commands,
+it displays graphics one complete frame at a time, allowing the creation of smooth animations. No graphics
+will be displayed until {\tt anim} receives a flush frame command; at that point, the completed frame containing
+all objects drawn up to that point is 
+displayed. Any subsequent graphics commands will be stored up for the next frame, and displayed once
+the next flush frame command is received, and so on. A typical usage is to include many drawing commands
+followed by a flush command within a simulation loop, drawing one frame of animation every one (or more) 
+simulation intervals.
+
+The input commands are as follows:
+
+\subsection {Drawing commands}
+\begin{itemize}
+\item {\tt l {\it x1 y1 x2 y2}} -- draw a line from (x1,y1) to (x2,y2)
+\item {\tt L {\it x1 y1 x2 y2}} -- draw a line from (x1,y1) to (x2,y2) relative to the viewport (objects that should remain stationary on screen even if the viewport is scaled; see the sample program {\tt overrelax} for an example)
+\item {\tt c {\it x y r}} -- draw a circle at (x,y) with radius r
+\item {\tt C {\it r g b}} -- change the current drawing color to the given RGB color
+\item {\tt t {\it x y}} -- Print some text at coordinates x,y. The text that will be printed is entered as the {\it next} line of input.
+\item {\tt T {\it x y}} -- Print some text at coordinates x,y relative to the viewport. This is useful for creating text readouts that will not move as the viewport is moved/rescaled. Again, this is a two-line command, with the text to be printed on the next line.
+\end{itemize}
+\subsection{Drawing commands, 3D-specific}
+\begin{itemize}
+
+\item {\tt l3 {\it x1 y1 z1 x2 y2 z2}} -- draw a line from (x1,y1,z2) to (x2,y2,z2)
+\item {\tt c3 {\it x y z r}} -- draw a sphere at (x,y,z) with radius r
+\item {\tt ct3 {\it index x y z r}} -- draw a sphere at (x,y,z) with radius r, and additionally create a trail behind it. Since you might want 
+  multiple objects with trails, this command also requires a trail index. (If you want only one trail, set the index to 0.)
+\item {\tt trl {\it index length}} -- set the length of the trail with the given index
+\item {\tt t3 {\it x y z}} -- Print some text at coordinates x,y,z. The text that will be printed is entered as the {\it next} line of input.
+\item {\tt q3 {\it x1 y1 z1 x2 y2 z2 x3 y3 z3 x4 y4 z4}} -- Draw a quadrilateral with the specified endpoints (this is useful for making meshes). 
+\end{itemize}
+
+\subsection{Control commands}
+\begin{itemize}
+\item {\tt A {\it x}} -- Turn on (x=1) or off (x=0) the display of axes. 
+\item {\tt S {\it scale}} -- rescale the window, such that the distance from the center to the edge is {\it scale}, without changing
+the angle of view.
+\item {\tt S3 {\it viewdist}} -- change the perspective, so that the subject is viewed from {\it viewdist} units away, without changing 
+its apparent size
+%\item {\tt center {\it x y}} -- center the window at coordinates x,y
+\item {\tt screenshot} -- take a screenshot and save it. It will be given a default name ({\tt anim.png}
+or {\tt anim-}(number){\tt.png}) if you don't specify one; you can also specify a filename.
+\item {\tt center3 {\it x y z}} -- center the window at coordinates x,y,z
+\item {\tt !{\it text}} -- Print {\it text} to standard output (so your program can still print text to the terminal, or to a log file)
+\item {\tt F} -- Flush the current frame to the screen
+\item {\tt FG} -- Flush the current frame to the screen, and also add it to the animated gif
+\item {\tt endgif <name>} -- Create an animated gif out of the frames flushed with {\tt FG}; if you don't specify a name, a default will be used
+
+\end{itemize}
+
+
+The {\tt !} command deserves special mention. The remainder of any input line prefixed by an ! will be printed to stdout, bypassing {\tt anim}'s need to hijack
+the stdout of your program to receive graphics commands. Thus, you can do things like {\tt ./myprog | anim > output.txt}; all lines beginning with a ! will be 
+written to {\tt output.txt} (without the !'s), while all other lines will be interpreted by {\tt anim} as graphics directives 
+(or ignored if they make no sense to {\tt anim}).
+
+The commands that display text in the {\tt anim} window ({\tt t}, {\tt T}, and {\tt t3}) are all two lines long; the second line contains the text to be printed.
+
+If you don't specify a value for the scale, framerate, etc., sensible defaults will be chosen. In the default scale the viewport runs from (-1.2, -1.2) to (1.2, 1.2),
+with axes enclosing the space (-1,-1) to (1,1). 
+
+
+\subsection{Runtime control}
+The display of {\tt anim} can be controlled somewhat with keyboard and mouse input into the window while it is running. The available commands are:
+
+\begin{itemize}
+\item WASD: move around (2D mode)
+\item WS/AD/QE: rotate (3D mode)
+\item shift-Q: quit
+\item shift-P: take a screenshot and save with a default name
+\item shift-I: invert brightness (for projectors in classrooms)
+\item shift-A: toggle axes
+\item -/=: zoom in/out (change the scale of the drawing)
+\item shift -/=: move the viewing position in/out, keeping the magnification fixed (changes prevalence of perspective effect)
+\end{itemize}
+
+You can also click and drag to move around and use the mousewheel to zoom in and out, although using the mousewheel may only work on Linux systems.
+
+When {\tt anim} is closed, it will remember the window size, viewport location and scale,
+3D rotation angles, and the like.
+
+\subsection{3D mode details}
+
+The 3D mode lights the scene with a fixed light coming from the +z direction, along with a dimmer ambient light. If anyone is interested in the ability to adjust (either with interactive
+keyboard control in {\tt anim} itself, or with text commands), please let me know and I'll add this.
+
+\section{Sample and demo code}
+
+To compile the demo codes that are in C, just do {\tt make demos}.
+
+\subsection{\tt pendulum-basic.py}
+
+This shows the basic structure of using {\tt anim} to animate a swinging pendulum. 
+In Python: just do {\tt python pendulum-basic.py | anim} (or {\tt python3 pendulum-basic.py | anim} if
+needed on your machine).
+
+\subsection{\tt frameskip-illustration.py}
+
+This code shows a simple way of simulating multiple timesteps per frame of animation,
+as a variant on the previous; it runs just as fast, but uses a smaller timestep for
+more accuracy.
+
+\subsection{\tt kepler-problem}
+
+This program in C models an orbit, demonstrating 3D mode and drawing motion with 
+trails. Just run {\tt ./kepler-problem | anim}.
+
+\subsection{\tt modified-kepler-problem}
+
+This program in C models an orbit with modified Newtonian gravity where the power law
+is not exactly inverse square, as happens in the regime where GR corrections matter.
+You should be able to see the orbit precess over time.
+
+\subsection{\tt pendulum-parallel.py}
+
+This program in Python simulates multiple swinging pendula at once, demonstrating
+the amplitude-period connection, and illustrating how to build more complex 3D
+things in {\tt anim}.
+
+\subsection{\tt string-parallel}
+
+This program in C++ simulates multiple vibrating {\it strings}, showing a variety
+of nonlinear effects. Running {\tt ./string-parallel | anim} with no arguments
+will simulate the $N=2$ normal mode with a variety of amplitudes, and also print out
+the order of command-line arguments if you want to change the behavior.
+
+\subsection{\tt membrane}
+
+This program in C++ simulates a vibrating circular membrane. Running it with no arguments
+will simulate a Gaussian bump initial condition; you can also specify a Bessel function
+(normal mode)
+with {\tt ./membrane b \it (angular mode number) (radial mode number)}.
+
+\end{document}

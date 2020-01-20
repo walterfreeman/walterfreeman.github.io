@@ -23,8 +23,8 @@ gcc anim.c -framework GLUT -framework OpenGL -framework Cocoa
 
 #define timing_hack 0
 #define ANIM_FONT GLUT_BITMAP_HELVETICA_18
-#define NB 50
-#define BL 1000
+#define NB 500
+#define BL 10000
 
 int traillen[NB]={BL};
 int rbl[NB]={0};
@@ -49,7 +49,7 @@ int track=0; // are we currently following the user's mouse movement?
 double tx,ty,tz=0;
 float modmat[16], invmodmat[16], projmat[16], invprojmat[16];
 double contrast=1;
-double vdist=4, lastvdist=4;
+double vdist=12, lastvdist=12;
 int ctog=1;
 double theta=M_PI/4,phi=0,psi=4*M_PI/3;
 double theta2=M_PI/4;
@@ -226,7 +226,8 @@ vector rotate(vector v1, GLfloat mmat[])
 void sphere_face(vector c, double r, vector v1, vector v2, vector v3, int l)
 {
   vector temp;
-  if (drand48() > 0.5) {temp=v1; v1=v2; v2=temp;}
+//  if (drand48() > 0.5) {temp=v1; v1=v2; v2=temp;}
+//  temp=v1; v1=v2; v2=temp;
   glColor4f(v1.x/2+0.5,v1.y/2+0.5,v1.z/2+0.5,1);
   if (l==0)
   {
@@ -248,7 +249,7 @@ void sphere_face(vector c, double r, vector v1, vector v2, vector v3, int l)
     sphere_face (c, r, normalize((v1+v2)/2), normalize((v1+v3)/2), normalize((v2+v3)/2),l-1);
     sphere_face (c, r, normalize((v1)/2), normalize((v1+v3)/2), normalize((v2+v1)/2),l-1);
     sphere_face (c, r, normalize((v2)/2), normalize((v1+v2)/2), normalize((v2+v3)/2),l-1);
-    sphere_face (c, r, normalize((v3)/2), normalize((v1+v3)/2), normalize((v2+v3)/2),l-1);
+    sphere_face (c, r, normalize((v1+v3)/2),  normalize((v3)/2), normalize((v2+v3)/2),l-1);
   }
 }
 void recurse_sphere(vector c, double r, int l)
@@ -280,9 +281,14 @@ void vvert(vector v)
 void myColor4f(float r, float g, float b, float a)
 {
   a=pow(a,1/contrast);
-  float col[]={r,g,b,1};
-  float spec[]={sqrt(r)/2,sqrt(g)/2,sqrt(b)/2,1};
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, col);
+  float col[]={r,g,b,a};
+  float invcol[]={1.0f-(g+b)*0.5f,1.0f-(b+r)*0.5f,1.0f-(g+r)*0.5f,a};
+  float spec[]={sqrt(r)/2,sqrt(g)/2,sqrt(b)/2,a};
+  if (inverse == 0)
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, col);
+  else
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, invcol);
+  
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, spec);
   if (inverse == 0) glColor4f(r,g,b,a);
   if (inverse == 1) glColor4f(1-(g+b)*0.5,1-(b+r)*0.5,1-(g+r)*0.5,a);
@@ -291,18 +297,6 @@ void myColor4f(float r, float g, float b, float a)
 void transform(double x, double y, double z, double *X, double *Y, double *Z);
 void transform(vector v1, vector v2);
 
-
-void cachetrig()
-{
-  if (td==0) return;
-  costheta=cos(theta);
-  sintheta=sin(theta);
-  sinphi=sin(phi);
-  cosphi=cos(phi);
-  sinpsi=sin(psi);
-  cospsi=cos(psi);
-
-}
 
 void renderBitmapString(double x, double y, double z, void *font, char *string) 
 {  
@@ -325,7 +319,6 @@ void renderBitmapString(double x, double y, double z, void *font, char *string)
   glPopMatrix();
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
-  glEnable(GL_LIGHTING);
   
   // crude fix
   glMatrixMode(GL_PROJECTION);
@@ -338,6 +331,7 @@ void renderBitmapString(double x, double y, double z, void *font, char *string)
      glRotated(phi*180/3.14159, 1, 0, 0);
      glRotated(theta*180/3.14159, 0, 1, 0);
      glRotated(psi*180/3.14159, 0, 0, 1);
+  glEnable(GL_LIGHTING);
 }
 
 void renderBitmapString3(double x, double y, double z, void *font, char *string) 
@@ -524,8 +518,8 @@ void quad(const vector v1, const vector v2, const vector v3, const vector v4, do
     static vector nrm1,nrm2;
     nrm1=f*normalize((v1-v2)^(v1-v3));
     nrm2=f*normalize((v4-v1)^(v4-v3));
-    if (rotate(rotate(nrm1,invmodmat),invprojmat).z < 0) nrm1=nrm1*-1;
-    if (rotate(rotate(nrm2,invmodmat),invprojmat).z < 0) nrm2=nrm2*-1;
+//    if (rotate(rotate(nrm1,invmodmat),invprojmat).z < 0) nrm1=nrm1*-1;
+//    if (rotate(rotate(nrm2,invmodmat),invprojmat).z < 0) nrm2=nrm2*-1;
     glNormal3d(nrm1.x, nrm1.y, nrm1.z);
     myColor4f(red/2,green/2,blue/2,1);
     float shine=50.0;
@@ -555,6 +549,7 @@ void quad(const vector v1, const vector v2, const vector v3, const vector v4, do
     lin3(v3, v4);
     lin3(v4, v1);
     glEnd();
+
 }
 
 void draw_3d_framelines(void)
@@ -672,10 +667,6 @@ void mouse_track(void)
   mz=0;
    while (need_guesses == 1)
    {
-     if (td==0)
-     {
-       costheta=1;sintheta=0;cosphi=1;sinphi=0;cospsi=1;sinpsi=0;       
-     }
    transform(gx,gy,gz,&x,&y,&z);
    sep=(x-mx)*(x-mx) + (y-my)*(y-my) + (z-mz)*(z-mz);
    
@@ -721,7 +712,9 @@ void disp(void)
 void idle(void)
 {
 //  printf(" -- START OF IDLE t=%d--\n",glutGet(GLUT_ELAPSED_TIME));
+  static int spherecounter=0;
   static int n,i, num_lines=9;
+  static int warmup=2;
   static int decimals;
   static double angle;
   static double r;
@@ -735,6 +728,7 @@ void idle(void)
   static double spacing;
   static double x1,y1,x2,y2;
   static vector trail[BL][NB];
+//  printf("Allocated %d buffers of length %d\n",NB,BL);
   static char c;
   static char num[200];
   static char line2[300];
@@ -747,61 +741,82 @@ void idle(void)
   static double boxsize;
   static short int dummy;
   static vector v1, v2, v1t, v2t, v3, v4, v3t, v4t;
-  if (fgets(line,299,stdin) == NULL) {} // to make the compiler happy; we don't really care
-  if (feof(stdin)) {usleep(10000);printf("out of input!\n");return;}
-  
+  if (warmup)
+  {
+    warmup--;
+    line[0]='F';
+  }
+  else 
+  {
+    if (fgets(line,299,stdin) == NULL) {} // to make the compiler happy; we don't really care
+    if (feof(stdin)) {usleep(10000);return;}
+  }
   // transform guess coordinates to screen coordinates
        
    // draw framelines, 2D
-
-  if (!strncmp(line,"center3",7))
-    sscanf(&line[8],"%lf %lf %lf",&center.x,&center.y,&center.z);
-  
-//  if (!strncmp(line,"center ",7))
-//    sscanf(&line[7],"%lf %lf",&center.x,&center.y);
-
-
-  else if (line[0] == '!') { // bypass
-    printf("%s",&line[1]);
-  }
-
-  else if (!strncmp(line,"l ",2)) { // line, no color specified
-//    printf("Remaining characters: %s\n",&line[2]);
-    sscanf(&line[2],"%lf %lf %lf %lf",&v1.x,&v1.y,&v2.x,&v2.y);
-    glBegin(GL_LINES);
-//    printf("line from %f,%f to %f,%f\n",v1.x,v1.y,v2.x,v2.y);
-    lin(v1.x,v1.y,v2.x,v2.y);
-    glEnd();
-    }
-
-  else if (!strncmp(line,"c3 ",3)) { // 3d circle
+ if (!strncmp(line,"c3 ",3)) { // 3d circle
     td=1;
-    myColor4f(red,green,blue,1);
-    GLfloat white[]={1.f, 1.f, 1.f, 1.f};
- ;
+    spherecounter++;
+//    myColor4f(red,green,blue,1);
+    static GLfloat white[]={1.f, 1.f, 1.f, 1.f};
+ 
     vector cent;	
     sscanf(&line[3],"%lf %lf %lf %lf",&cent.x,&cent.y,&cent.z,&r);
-//    cent.x=cent.y=cent.z=0; r=0.01;
-    int faces = r/scale*window_size*0.01;
-    if (faces < 8) faces=8;
-    if (faces > 15) faces=15;
-//    printf("Sphere has %d faces\n",faces);
-//    int faces=4;
-//    myColor4f(1,1,1,1);
     float curcolor[4]={(float)red,(float)green,(float)blue,1};
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,curcolor);
     float shine=30.0;
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &shine);
-//    recurse_sphere(cent,r,3);
-//    rotate(cent,invmodmat); 
     glTranslatef    (cent.x, cent.y, cent.z);
     glutSolidSphere(r, circfaces, circfaces); 
     glTranslatef    (-cent.x, -cent.y, -cent.z);
   }
+  else if (line[0] == 'C') { //just set color
+    sscanf(line,"%c %lf %lf %lf",&c,&red,&green,&blue);
+    myColor4f(red,green,blue,1);
+  }
+ else if (!strncmp(line,"fc3 ",3)) { // 3d circle, done by hand with recursion
+    td=1;
+//    myColor4f(red,green,blue,1);
+    static GLfloat white[]={1.f, 1.f, 1.f, 1.f};
+ 
+    vector cent;	
+    sscanf(&line[3],"%lf %lf %lf %lf",&cent.x,&cent.y,&cent.z,&r);
+    float curcolor[4]={(float)red,(float)green,(float)blue,1};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,curcolor);
+    float shine=30.0;
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &shine);
+    recurse_sphere(cent,r,1);
+    rotate(cent,invmodmat); 
+  }
 
+  else if (!strncmp(line,"center3",7))
+    sscanf(&line[8],"%lf %lf %lf",&center.x,&center.y,&center.z);
+  
+  else if (line[0] == '!') { // bypass
+    printf("%s",&line[1]);
+    if (line[1] == 'F')
+      fflush(stdout);
+  }
+
+  else if (!strncmp(line,"l ",2)) { // line, no color specified
+    sscanf(&line[2],"%lf %lf %lf %lf",&v1.x,&v1.y,&v2.x,&v2.y);
+    glBegin(GL_LINES);
+    lin(v1.x,v1.y,v2.x,v2.y);
+    glEnd();
+    }
+
+  else if (!strncmp(line,"erase ",6))
+  {
+    int b;
+    sscanf(&line[7],"%d",&b);
+    rbocc[b]=0;
+    rbl[b]=0; 
+  }
   else if (!strncmp(line,"ct3 ",3))
   {
+    spherecounter++;
     td=1;
 
     int b;
@@ -818,7 +833,7 @@ void idle(void)
     {
       if (i > 2*traillen[b]) break;
       double bright=exp(-(float)i/traillen[b]);
-      myColor4f(bright*red,bright*green,bright*blue,0);
+      myColor4f(red,green,blue,bright);
       int j=(rbl[b]-i+BL)%BL;
       vvert(trail[j][b]);
     }
@@ -856,6 +871,7 @@ void idle(void)
 //      if (ctog)      myColor4f(red,green,blue,exp(-(v2.z*20+vdist)/vdist)+.15);
       vvert(v2);
       glEnd();
+//      myColor4f(red,green,blue,1);
   }
 
   else if (!strncmp(line,"trl ",4))
@@ -869,21 +885,24 @@ void idle(void)
   {
     sscanf(&line[1],"%lf %lf",&x,&y);
     if (fgets(line2,300,stdin) == NULL) {}
+//    myColor4f(red,green,blue,1);
+    glDisable(GL_LIGHTING);
     renderBitmapString(x,y,0,GLUT_BITMAP_TIMES_ROMAN_24,line2);
+    glEnable(GL_LIGHTING);
   }
   else if (line[0] == 't' && line[1] == '3')
   {
     vector v,vt;
     td=1;
     sscanf(&line[2],"%lf %lf %lf",&v.x,&v.y,&v.z);
-
     vt=transform(v);
-//    if (ctog)      myColor4f(red,green,blue,exp(-(z*20+vdist)/vdist)+.15);
-//    x = x/(z+vdist)*(vdist/scale);
-//    y = y/(z+vdist)*(vdist/scale);
+    if (ctog)      myColor4f(red,green,blue,1);
     if (fgets(line2,300,stdin) == NULL) {}
-    //    glColor3f(0,0,0);
-    renderBitmapString(vt.x,vt.y,0,GLUT_BITMAP_TIMES_ROMAN_24,line2);
+   
+        glColor3f(1.,1.,1.);
+    glDisable(GL_LIGHTING);
+    renderBitmapString3(v.x,v.y,v.z,GLUT_BITMAP_TIMES_ROMAN_24,line2);
+    glEnable(GL_LIGHTING);
   }
 
   else if (line[0] == 't' && line[1] == ' ') // text, not 3d, scales with viewport
@@ -892,10 +911,6 @@ void idle(void)
     x -= center.x; y -= center.y;
     if (fgets(line2,300,stdin) == NULL) {}
     renderBitmapString(x/scale,y/scale,0,GLUT_BITMAP_TIMES_ROMAN_24,line2);
-  }
-  else if (line[0] == 'C') { //just set color
-    sscanf(line,"%c %lf %lf %lf",&c,&red,&green,&blue);
-    myColor4f(red,green,blue,1);
   }
   else if (line[0] == 'A') { // toggle gridlines
     sscanf(&line[1],"%d",&axes);
@@ -926,14 +941,7 @@ void idle(void)
   
   else if (!strncmp(line,"c ",2)) { // circle
     sscanf(line,"%c %lf %lf %lf",&c,&x1,&y1,&r);
-
-//    x1 -= center.x; y1 -= center.y;
-//
-//    if (r < scale/window_size*1.5)
-//    {  
-//      r= scale/window_size*1.5;
-//    }
-    if (!((x1+r)/scale > 1 || (x1-r)/scale < -1 || (y1+r)/scale > 1 || (y1-r)/scale < -1))
+    if (1)
     {
     num_lines=sqrt(window_size*r/scale)*2+4;
     glBegin(GL_LINES);
@@ -952,12 +960,19 @@ void idle(void)
   else if (line[0] == 'Q') {
     fflush(stdout); exit(0);
   }
+  
   else if (line[0] == 'F') {
+   spherecounter++;
+   circfaces = 5 * pow(2,log10(10000/spherecounter));
+   if (circfaces < 4) circfaces = 4;
+ //  if (circfaces > 24) circfaces = 24;
+   spherecounter = 0; 
+   
 
-    cachetrig();  // flush the frame
+   spherecounter=0;   
    if ((axes || adef) && td == 0) 
    {
-    draw_framelines();
+     draw_framelines();
    }
    // draw frame, 3D
    if (axes && td) 
@@ -970,9 +985,6 @@ void idle(void)
     theta=(theta*0.9+theta2*0.1);
     phi=(phi*0.9+phi2*0.1);
     psi=(psi*0.9+psi2*0.1);
-//    theta=theta2;
-//    phi=phi2;
-//    psi=psi2;
     myColor4f(red,green,blue,1);     
     glutSwapBuffers(); 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -981,6 +993,7 @@ void idle(void)
     lastdraw=glutGet(GLUT_ELAPSED_TIME);
     if (update) save_config();
     // set up matrix
+
    if (td)
    {  
      glMatrixMode(GL_PROJECTION); 
@@ -1033,10 +1046,10 @@ void idle(void)
     float lightcoldiffuse0[] = {0.8, 0.8, 0.8, 1.};
     float lightcolspecular0[] = {0.5, 0.6, 0.7, 1.};
     float lightcolambient0[] = {0.0, 0.0, 0.0, 1};
-   glLightfv(GL_LIGHT0, GL_POSITION, lightpos0);
-   glLightfv(GL_LIGHT0, GL_SPECULAR, lightcolspecular0);
-   glLightfv(GL_LIGHT0, GL_DIFFUSE, lightcoldiffuse0);
-   glLightfv(GL_LIGHT0, GL_AMBIENT, lightcolambient0);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightpos0);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, lightcolspecular0);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightcoldiffuse0);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, lightcolambient0);
   }
 //   rotate(fcenter,modmat);
   
@@ -1099,8 +1112,6 @@ void keyb(unsigned char key, int x, int y)
   if (key == 'F') {fpsdisplay = 1-fpsdisplay; update=1;}
   if (key == 'n') {circfaces++; if (circfaces>15) circfaces=15; update=1; fprintf(stderr,"circfaces -> %d\n",circfaces);}
   if (key == 'm') {circfaces--; if (circfaces<4) circfaces=4; update=1;fprintf(stderr,"circfaces -> %d\n",circfaces);}
-  if (key == '=') {vdist2 /= 1.02; update=1;}
-  if (key == '-') {vdist2 *= 1.02; update=1;}
   if (td) {
     if (key == 'q') {theta2 += 0.1; update=1;}
     if (key == 'e') {theta2 -= 0.1; update=1;}
@@ -1108,11 +1119,15 @@ void keyb(unsigned char key, int x, int y)
     if (key == 's') {phi2   -= 0.1; update=1;}
     if (key == 'a') {psi2   += 0.1; update=1;}
     if (key == 'd') {psi2   -= 0.1; update=1;}
-    if (key == '_') {vdist2 *= 1.02; scale2 *= 1.02; update=1;}
-    if (key == '+') {vdist2 /= 1.02; scale2 /= 1.02; update=1;}
+    if (key == '-') {vdist2 *= 1.02; scale2 *= 1.02; update=1;}
+    if (key == '=') {vdist2 /= 1.02; scale2 /= 1.02; update=1;}
+    if (key == '+') {vdist2 /= 1.02; update=1;}
+    if (key == '_') {vdist2 *= 1.02; update=1;}
   }
   else
   {
+    if (key == '=') {vdist2 /= 1.02; update=1;}
+    if (key == '-') {vdist2 *= 1.02; update=1;}
     if (key == 'a') {center2.x += 0.02*scale2;update=1;}
     if (key == 's') {center2.y += 0.02*scale2;update=1;}
     if (key == 'd') {center2.x -= 0.02*scale2;update=1;}
@@ -1145,7 +1160,7 @@ void load_config(void)
   int winx, winy;
   FILE *fp;
   fp=fopen(".animrc2","r");
-  if (!fp) {printf("Config file not found, using defaults\n"); return;}
+  if (!fp) {window_size=640; glutInitWindowSize(window_size,window_size); return;}
   if (fscanf(fp,"%d %d %lf %lf\n",&axes,&fpsdisplay,&contrast,&scale) == 0) {axes=1; fpsdisplay=0; contrast=1; scale=4;}
   if (fscanf(fp,"%lf %lf %lf %lf\n",&theta2,&phi2,&psi2,&vdist) == 0) {theta2=phi2=psi2=0; vdist=15;}
   theta=theta2;
@@ -1157,7 +1172,7 @@ void load_config(void)
   if (inverse) contrast*3;
   if (fscanf(fp,"%d %d %d\n",&window_size,&winx,&winy) == 0) 
   {
-    window_size=640; 
+    window_size=800; 
     glutInitWindowPosition(64,64);
   }
   else
@@ -1166,6 +1181,7 @@ void load_config(void)
     glutInitWindowPosition(winx,winy);
   }
   fclose(fp);
+
   if (window_size_override) window_size = window_size_override;
   glutInitWindowSize(window_size,window_size);
 }
@@ -1181,7 +1197,6 @@ int main(int argc, char **argv)
   theta=theta2;
   psi=psi2;
   phi=phi2;
-  cachetrig();
 
 
   if (argc == 2)
